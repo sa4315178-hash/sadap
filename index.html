@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حاسبة الأقساط | احسب قرضك بسهولة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef3f1;--ink:#16302b;--muted:#5a726c;--brand:#0b6e4f;--brand-d:#08543c;--line:#d3e0db;--card:#fff;--warn:#b45309}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Cairo",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px 56px}
+h1{font-size:30px;font-weight:800}
+.sub{color:var(--muted);margin-bottom:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+.card h2{font-size:18px;margin-bottom:6px}
+label{display:block;margin-top:14px;font-weight:600;font-size:15px}
+.val{float:left;color:var(--brand);font-weight:700;direction:ltr}
+input[type=number]{width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:10px;font:inherit;margin-top:4px}
+input[type=range]{width:100%;accent-color:var(--brand);margin-top:6px}
+input:focus-visible,button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.res{background:var(--brand);color:#fff;border-radius:18px;padding:22px;text-align:center}
+.res small{opacity:.85;font-size:15px}
+.res .m{font-size:44px;font-weight:800;line-height:1.3}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.stats div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.stats b{display:block;font-size:19px}
+.stats span{color:var(--muted);font-size:13px}
+.split{height:14px;border-radius:99px;overflow:hidden;display:flex;margin-top:14px;background:var(--line)}
+.split i{display:block;height:100%;transition:width .3s}
+.key{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:6px}
+.key span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-left:5px;background:var(--c)}
+.tbl{margin-top:18px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px;min-width:420px}
+th,td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--line)}
+th{background:var(--bg);font-weight:700;position:sticky;top:0}
+.more{display:block;margin:12px auto 0;background:#fff;border:2px solid var(--brand);color:var(--brand);border-radius:10px;padding:8px 22px;font:inherit;font-weight:700;cursor:pointer}
+.note{margin-top:14px;font-size:13px;color:var(--muted)}
+@media(max-width:700px){.grid{grid-template-columns:1fr}h1{font-size:25px}.res .m{font-size:38px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>حاسبة الأقساط</h1>
+  <p class="sub">اعرف قسطك الشهري وإجمالي الفائدة وجدول السداد خلال ثوانٍ.</p>
+
+  <div class="grid">
+    <section class="card">
+      <h2>بيانات القرض</h2>
+      <label for="amt">مبلغ القرض <span class="val" id="vAmt"></span></label>
+      <input type="number" id="amt" min="0" value="50000">
+      <input type="range" id="amtR" min="1000" max="500000" step="1000" value="50000" aria-label="مبلغ القرض">
+
+      <label for="rate">نسبة الفائدة السنوية % <span class="val" id="vRate"></span></label>
+      <input type="range" id="rate" min="0" max="30" step="0.1" value="8">
+
+      <label for="yrs">مدة السداد بالسنوات <span class="val" id="vYrs"></span></label>
+      <input type="range" id="yrs" min="1" max="30" step="1" value="5">
+    </section>
+
+    <section>
+      <div class="res">
+        <small>القسط الشهري</small>
+        <div class="m" id="monthly"></div>
+      </div>
+      <div class="stats">
+        <div><b id="interest"></b><span>إجمالي الفائدة</span></div>
+        <div><b id="total"></b><span>إجمالي المبلغ المدفوع</span></div>
+      </div>
+      <div class="split"><i id="pA" style="background:#0b6e4f"></i><i id="pI" style="background:#f59e0b"></i></div>
+      <div class="key"><span style="--c:#0b6e4f">أصل القرض</span><span style="--c:#f59e0b">الفائدة</span></div>
+    </section>
+  </div>
+
+  <section class="card tbl">
+    <h2>جدول السداد</h2>
+    <table>
+      <thead><tr><th>الشهر</th><th>القسط</th><th>من الأصل</th><th>من الفائدة</th><th>المتبقي</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <button class="more" id="more">عرض كل الأشهر</button>
+    <p class="note">الحساب تقديري بنظام القسط الثابت، وقد تختلف الأرقام الفعلية حسب شروط الجهة المُقرِضة.</p>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const f=n=>Math.round(n).toLocaleString('en-US');
+let all=false;
+function calc(){
+  const P=Math.max(0,+$('amt').value||0), r=+$('rate').value/100/12, n=+$('yrs').value*12;
+  $('vAmt').textContent=f(P); $('vRate').textContent=$('rate').value+'%'; $('vYrs').textContent=$('yrs').value+' سنة';
+  const M=r===0?P/n:P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+  const total=M*n, int=total-P;
+  $('monthly').textContent=f(M); $('interest').textContent=f(int); $('total').textContent=f(total);
+  const pa=total?P/total*100:0; $('pA').style.width=pa+'%'; $('pI').style.width=(100-pa)+'%';
+  let bal=P,h='';
+  const show=all?n:Math.min(12,n);
+  for(let k=1;k<=n;k++){
+    const it=bal*r, pr=M-it; bal=Math.max(0,bal-pr);
+    if(k<=show) h+=`<tr><td>${k}</td><td>${f(M)}</td><td>${f(pr)}</td><td>${f(it)}</td><td>${f(bal)}</td></tr>`;
+  }
+  $('rows').innerHTML=h;
+  $('more').textContent=all?'عرض أول 12 شهراً فقط':'عرض كل الأشهر';
+  $('more').style.display=n<=12?'none':'block';
+}
+$('amt').oninput=()=>{$('amtR').value=Math.min(500000,$('amt').value);calc()};
+$('amtR').oninput=()=>{$('amt').value=$('amtR').value;calc()};
+['rate','yrs'].forEach(i=>$(i).oninput=calc);
+$('more').onclick=()=>{all=!all;calc()};
+calc();
+</script>
+</body>
+</html>
